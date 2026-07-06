@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Wyze Bridge - Extracts RTSP stream from Wyze camera
+  wyze-bridge:
+    image: mrlt8/wyze-bridge:latest
+    container_name: wyze-bridge
+    ports:
+      - "8554:8554"    # RTSP
+      - "8888:8888"    # WebRTC
+      - "5050:5000"    # Web UI
+    environment:
+      WB_AUTH: "false"
+      WYZE_EMAIL: ${WYZE_EMAIL}
+      WYZE_PASSWORD: ${WYZE_PASSWORD}
+    restart: unless-stopped
+
+  # ThinkCam - Motion detection & recording
+  thinkcam:
+    build: .
+    container_name: thinkcam
+    ports:
+      - "8000:8000"
+    environment:
+      WYZE_RTSP_URL: "rtsp://wyze-bridge:8554/stream/${CAMERA_NAME:-front_door}"
+      WYZE_MOCK: "false"
+      MOTION_SENSITIVITY: "0.5"
+      DETECTION_MODE: "auto"
+      CLIP_DURATION: "60"
+      ONEDRIVE_MOCK: "true"
+      FIREBASE_MOCK: "true"
+      API_HOST: "0.0.0.0"
+      API_PORT: "8000"
+      LOG_LEVEL: "INFO"
+    volumes:
+      - ./clips:/app/clips
+      - ./logs:/app/logs
+    depends_on:
+      - wyze-bridge
+    restart: unless-stopped
+    networks:
+      - thinkcam-net
+
+networks:
+  thinkcam-net:
+    driver: bridge
+
+volumes:
+  clips:
+  logs:
