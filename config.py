@@ -2,11 +2,17 @@
 Configuration management
 Loads from .env file with sensible defaults
 """
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 import os
 from dotenv import load_dotenv
 from dataclasses import dataclass
 
-load_dotenv()
+load_dotenv('.env.local', override=True)  # local secrets take priority
 
 
 @dataclass

@@ -25,6 +25,8 @@ wheels/
 # Project specific
 .env
 .env.local
+wyze.env
+wyze-storage/
 *.db
 *.sqlite3
 clips/

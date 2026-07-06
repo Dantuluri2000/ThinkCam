@@ -52,6 +52,24 @@ current_clip = None
 last_motion_time = None
 
 
+def _connect_rtsp_with_retry(max_retries: int = 5, delay: int = 15):
+    """Connect to RTSP stream with retries (runs in background thread)"""
+    global stream_handler
+    for attempt in range(1, max_retries + 1):
+        logger.info(f"RTSP connect attempt {attempt}/{max_retries}: {config.wyze_rtsp_url}")
+        handler = RTSPStreamHandler(config.wyze_rtsp_url)
+        if handler.start():
+            stream_handler = handler
+            stream_handler.set_frame_callback(process_frame)
+            logger.info("RTSP stream connected successfully")
+            return
+        else:
+            logger.warning(f"RTSP attempt {attempt} failed, retrying in {delay}s...")
+            import time
+            time.sleep(delay)
+    logger.error("All RTSP connection attempts failed")
+
+
 @app.on_event("startup")
 async def startup():
     """Initialize on startup"""
@@ -97,17 +115,12 @@ async def startup():
         logger.info("Using mock Firebase")
         notifications = MockFirebase()
     
-    # Start stream
+    # Start stream in background so server starts immediately
     if config.wyze_mock:
         logger.info("Using mock RTSP stream")
-        mock_stream = MockRTSPStream()
-        # For demo purposes, return mock
     else:
-        stream_handler = RTSPStreamHandler(config.wyze_rtsp_url)
-        if stream_handler.start():
-            stream_handler.set_frame_callback(process_frame)
-        else:
-            logger.error("Failed to start RTSP stream")
+        import asyncio
+        asyncio.get_event_loop().run_in_executor(None, _connect_rtsp_with_retry)
 
 
 @app.on_event("shutdown")
@@ -239,7 +252,6 @@ def main():
         app,
         host=config.api_host,
         port=config.api_port,
-        debug=config.api_debug,
         log_level=config.log_level.lower()
     )
 

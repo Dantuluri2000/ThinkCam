@@ -35,7 +35,16 @@ class RTSPStreamHandler:
     def start(self) -> bool:
         """Start capturing from RTSP stream"""
         try:
-            self.capture = cv2.VideoCapture(self.rtsp_url)
+            # Set RTSP transport to TCP and timeout before opening
+            cap = cv2.VideoCapture()
+            cap.open(self.rtsp_url, cv2.CAP_FFMPEG)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, self.buffer_size)
+            # Use TCP for RTSP (more reliable than UDP)
+            self.capture = cv2.VideoCapture(
+                self.rtsp_url + "?timeout=10000000",
+                cv2.CAP_FFMPEG
+            )
+            cap.release()
             
             if not self.capture.isOpened():
                 logger.error(f"❌ Failed to open RTSP stream: {self.rtsp_url}")
