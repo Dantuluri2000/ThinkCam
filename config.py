@@ -11,6 +11,12 @@ load_dotenv()
 
 @dataclass
 class Config:
+    # Wyze API Credentials
+    wyze_key_id: str = os.getenv('WYZE_KEY_ID', '')
+    wyze_api_key: str = os.getenv('WYZE_API_KEY', '')
+    wyze_email: str = os.getenv('WYZE_EMAIL', '')
+    wyze_password: str = os.getenv('WYZE_PASSWORD', '')
+    
     # Wyze Bridge / RTSP
     wyze_rtsp_url: str = os.getenv('WYZE_RTSP_URL', 'rtsp://localhost:8554/stream/front_door')
     wyze_mock: bool = os.getenv('WYZE_MOCK', 'false').lower() == 'true'
@@ -50,6 +56,13 @@ class Config:
     
     def validate(self) -> bool:
         """Validate critical config"""
+        # Check Wyze credentials
+        if self.wyze_key_id:
+            print(f"✅ Wyze API Key loaded (ID: {self.wyze_key_id[:8]}...)")
+        elif not self.wyze_mock:
+            print("⚠️  Warning: Wyze API not configured, using mock mode")
+            self.wyze_mock = True
+        
         if not self.wyze_rtsp_url and not self.wyze_mock:
             print("⚠️  Warning: WYZE_RTSP_URL not set, using mock")
             self.wyze_mock = True
